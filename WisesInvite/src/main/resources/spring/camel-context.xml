@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:camel="http://camel.apache.org/schema/spring"
+       xsi:schemaLocation="
+       http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+       http://camel.apache.org/schema/spring http://camel.apache.org/schema/spring/camel-spring.xsd">
+
+    <bean id="dataSource" class="org.apache.commons.dbcp.BasicDataSource" destroy-method="close">
+        <property name="driverClassName" value="com.mysql.cj.jdbc.Driver"/>  
+        <property name="url" value="jdbc:mysql://localhost:3306/EmployeeData"/>
+        <property name="username" value="root"/>
+        <property name="password" value="my-secret-pw"/>
+    </bean>
+
+  <!-- You could also define a traditional camel context here -->
+  <camelContext id="camel" xmlns="http://camel.apache.org/schema/spring">
+
+    <dataFormats>
+      <json id="jsonn" library="Jackson" />
+    </dataFormats>
+
+    <restConfiguration
+     component="jetty"
+     host="localhost" 
+     port="9080" 
+     contextPath="/api"
+     enableCORS="true">
+    </restConfiguration>
+
+    <rest id="Fino">
+      <post uri="/empdata/entry">
+        <route id="rest-route1" streamCache="true">
+          <log id="log1" message="Request Body Recievied from user ${body} :: ${headers}"/>
+          <unmarshal ref="jsonn"/>
+          <to id="to1" uri="seda:dbEntry?waitForTaskToComplete=Never"/>
+          <log id="log2" message="Respose Recieved from DB ${body}" />
+        </route>
+      </post>
+
+      <post uri="/empdata/update">
+        <route id="rest-route2" streamCache="true">
+          <log id="log3" message="Request Body Recievied from user ${body} :: ${headers}"/>
+          <unmarshal ref="jsonn"/>
+          <to id="to2" uri="seda:dbUpdate?waitForTaskToComplete=Never"/>
+          <log id="log4" message="Respose Recieved from DB ${body}" />
+        </route>
+      </post>
+    </rest>
+
+    <!--<route id="file-route" streamCache="true">
+      <from id="route-timer" uri="file:/home/shardul/db"/>
+      <log id="log5" message="Request Body Recievied from user ${body} :: ${headers}"/>
+      <to id="to3" uri="seda:dbEntry?waitForTaskToComplete=Never"/>
+      <log id="log6" message="Respose Recieved from DB ${body}" />
+    </route>-->
+
+    <route id="Entry-route" streamCache="true">
+      <from id="from-entry" uri="seda:dbEntry"/>
+      <log id="log7" message="Request Body Recievied from user ${body} :: ${headers}"/>
+      <setBody>
+          <simple> insert into Employee (EmpName,Empmail,EmpDOB,EmpDOJ,EmpDesig,IsEmp)  values ('${body[EmpName]}','${body[Empmail]}','${body[EmpDOB]}','${body[EmpDOJ]}','${body[EmpDesig]}','${body[IsEmp]}')</simple>
+      </setBody>
+	<log id="log12" message="Request Body sent to DB ${body}" />
+   <doTry>
+								<to id="to4" uri="jdbc:dataSource"/>
+								<doCatch>
+									<exception>java.lang.Exception</exception>
+									<log message="Exception Occured" />
+  <setBody>
+          <simple>Exception Occured while Setting Data </simple>
+      </setBody>
+								</doCatch>
+
+							</doTry>
+      <log id="log8" message="Respose Recieved from DB ${body}" />
+    </route>
+
+    <route id="Update-route" streamCache="true">
+      <from id="from-update" uri="seda:dbUpdate"/>
+      <log id="log9" message="Request Body Recievied from user ${body} :: ${headers}"/>
+      <setBody>
+          <simple> update Employee SET IsEmp = '${body[IsEmp]}'  where  Empmail = '${body[Empmail]}' </simple>
+      </setBody>
+	<log id="log11" message="Request Body sent to DB ${body}" />
+<doTry>
+								<to id="to5" uri="jdbc:dataSource"/>
+								<doCatch>
+									<exception>java.lang.Exception</exception>
+									<log message="Exception Occured" />
+  <setBody>
+          <simple>Exception Occured while Setting Data </simple>
+      </setBody>
+								</doCatch>
+
+							</doTry>
+      
+      <log id="log10" message="Respose Recieved from DB ${body}" />
+
+<choice>
+						<when>
+							<simple>${body} == '' </simple>
+							
+							<log message="Success Enable" />
+ <setBody>
+          <simple>{"message":"Successfully Updated"} </simple>
+      </setBody>
+						</when>
+						<otherwise>
+							<log message="Failure Body" />
+ <setBody>
+          <simple>${body} </simple>
+      </setBody>
+						</otherwise>
+					</choice>
+    </route>
+
+  </camelContext>
+
+</beans>
