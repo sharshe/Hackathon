@@ -13,6 +13,8 @@
         <property name="password" value="my-secret-pw"/>
     </bean>
 
+    <bean id="DBFields" class="com.keenable.hackathon.updateField" /> 
+
   <!-- You could also define a traditional camel context here -->
   <camelContext id="camel" xmlns="http://camel.apache.org/schema/spring">
 
@@ -24,6 +26,7 @@
      component="jetty"
      host="localhost" 
      port="9080" 
+     bindingMode="json"
      contextPath="/api"
      enableCORS="true">
     </restConfiguration>
@@ -32,8 +35,8 @@
       <post uri="/empdata/entry">
         <route id="rest-route1" streamCache="true">
           <log id="log1" message="Request Body Recievied from user ${body} :: ${headers}"/>
-          <unmarshal ref="jsonn"/>
-          <to id="to1" uri="seda:dbEntry?waitForTaskToComplete=Never"/>
+          <!-- <unmarshal ref="jsonn"/> -->
+          <to id="to1" uri="seda:dbEntry"/>
           <log id="log2" message="Respose Recieved from DB ${body}" />
         </route>
       </post>
@@ -41,14 +44,23 @@
       <post uri="/empdata/update">
         <route id="rest-route2" streamCache="true">
           <log id="log3" message="Request Body Recievied from user ${body} :: ${headers}"/>
-          <unmarshal ref="jsonn"/>
-          <to id="to2" uri="seda:dbUpdate?waitForTaskToComplete=Never"/>
+          <!-- <unmarshal ref="jsonn"/> -->
+          <to id="to2" uri="seda:dbUpdate"/>
           <log id="log4" message="Respose Recieved from DB ${body}" />
+        </route>
+      </post>
+
+      <post uri="/empdata/search">
+        <route id="rest-route3" streamCache="true">
+          <log id="log27" message="Request Body Recievied from user ${body} :: ${headers}"/>
+          <!-- <unmarshal ref="jsonn"/> -->
+          <to id="to9" uri="seda:dbSearch"/>
+          <log id="log28" message="Respose Recieved from DB ${body}" />
         </route>
       </post>
     </rest>
 
-    <!--<route id="file-route" streamCache="true">
+    <!-- <route id="file-route" streamCache="true">
       <from id="route-timer" uri="file:/home/shardul/db"/>
       <log id="log5" message="Request Body Recievied from user ${body} :: ${headers}"/>
       <to id="to3" uri="seda:dbEntry?waitForTaskToComplete=Never"/>
@@ -61,58 +73,205 @@
       <setBody>
           <simple> insert into Employee (EmpName,Empmail,EmpDOB,EmpDOJ,EmpDesig,IsEmp)  values ('${body[EmpName]}','${body[Empmail]}','${body[EmpDOB]}','${body[EmpDOJ]}','${body[EmpDesig]}','${body[IsEmp]}')</simple>
       </setBody>
-	<log id="log12" message="Request Body sent to DB ${body}" />
-   <doTry>
-								<to id="to4" uri="jdbc:dataSource"/>
-								<doCatch>
-									<exception>java.lang.Exception</exception>
-									<log message="Exception Occured" />
-  <setBody>
-          <simple>Exception Occured while Setting Data </simple>
-      </setBody>
-								</doCatch>
-
-							</doTry>
-      <log id="log8" message="Respose Recieved from DB ${body}" />
+      <log id="log8" message="Request Body sent to DB ${body}" />
+      <doTry>
+				<to id="to4" uri="jdbc:dataSource"/>
+				<doCatch>
+					<exception>java.lang.Exception</exception>
+					<log message="Exception Occured : ${exception}" />
+          <setBody>
+            <simple>{"message":"${exception}"} </simple>
+          </setBody>
+				</doCatch>
+      </doTry>
+      <log id="log9" message="Respose Recieved from DB ${body}" />
+      <choice>
+        <when>
+					<simple>${body} == null </simple>
+					<log id="log10" message="Success Enable" />
+          <setBody>
+            <simple>{"message":"Successfully Inserted"} </simple>
+          </setBody>
+				</when>
+				<otherwise>
+					<log id="log11" message="Failure Body" />
+          <setBody>
+            <simple>${body} </simple>
+          </setBody>
+				</otherwise>
+			</choice>
     </route>
 
     <route id="Update-route" streamCache="true">
       <from id="from-update" uri="seda:dbUpdate"/>
-      <log id="log9" message="Request Body Recievied from user ${body} :: ${headers}"/>
+      <log id="log12" message="Request Body Recievied from user ${body} :: ${headers}"/>
+      <bean ref="DBFields" method="showData" />
+      <log id="log13" message=" Secound key header : ${header.SecoundKey}"/>
       <setBody>
-          <simple> update Employee SET IsEmp = '${body[IsEmp]}'  where  Empmail = '${body[Empmail]}' </simple>
+          <simple> update Employee SET ${header.SecoundKey} = '${body[${header.SecoundKey}]}'  where  Empmail = '${body[Empmail]}' </simple>
       </setBody>
-	<log id="log11" message="Request Body sent to DB ${body}" />
-<doTry>
-								<to id="to5" uri="jdbc:dataSource"/>
-								<doCatch>
-									<exception>java.lang.Exception</exception>
-									<log message="Exception Occured" />
-  <setBody>
-          <simple>Exception Occured while Setting Data </simple>
-      </setBody>
-								</doCatch>
+      <log id="log14" message="Request Body sent to DB ${body}" />
+      <doTry>
+				<to id="to5" uri="jdbc:dataSource"/>
+				<doCatch>
+          <exception>java.lang.Exception</exception>
+          <log id="log15" message="Exception Occured : ${exception}" />
+          <setBody>
+            <simple>{"message":"${exception}"}</simple>
+          </setBody>
+				</doCatch>
+      </doTry>
+      <log id="log16" message="Respose Recieved from DB ${body}" />
+      <choice>
+        <when>
+					<simple>${body} == null </simple>
+					<log id="log17" message="Success Enable" />
+          <setBody>
+            <simple>{"message":"Successfully Updated"} </simple>
+          </setBody>
+				</when>
+				<otherwise>
+					<log id="log18" message="Failure Body" />
+          <setBody>
+            <simple>${body} </simple>
+          </setBody>
+				</otherwise>
+			</choice>
+      <setHeader headerName="CamelRestletResponse" id="_setHeader1">
+        <simple>${body}</simple>
+      </setHeader>
+    </route>
 
-							</doTry>
+    <route id="Schedular" streamCache="true">
+      <from id="from4" uri="quartz2://timerMail?cron={{scheduler}}" />
+      <log id="log19" message="Schedular started at : ${date:now:yyyy-MM-dd HH:mm:ss.SSS}"/>
+      <setBody>
+        <simple>{{mails}}</simple>
+      </setBody>
+      <split>
+        <tokenize token=","/>
+        <log id="log20" message="Schedular Processing For ${body}"/>
+        <!-- <choice>
+          <when>
+            <simple>${body} == DOB </simple>
+            <setBody>
+              <simple>{{DOBSelect}}</simple>
+            </setBody>
+          </when>
+          <otherwise>
+            <setBody>
+              <simple>{{DOJSelect}}</simple>
+            </setBody>
+          </otherwise>
+        </choice> -->
+        <setHeader headerName="Mailing">
+          <simple>${body}</simple>
+        </setHeader>
+
+        <setBody>
+          <simple>select * from Employee WHERE Emp${body} like '%-${date:now:MM-dd}' AND IsEmp='YES'</simple>
+        </setBody>
       
-      <log id="log10" message="Respose Recieved from DB ${body}" />
+      <log id="log21" message="Request Body sent to DB ${body}" />
+      <doTry>
+				<to id="to6" uri="jdbc:dataSource"/>
+				<doCatch>
+          <exception>java.lang.Exception</exception>
+          <log id="log22" message="Exception Occured" />
+          <setBody>
+            <simple>Exception Occured while Setting Data : ${exception} </simple>
+          </setBody>
+				</doCatch>
+      </doTry>
+      <log id="log23" message="Respose Recieved from DB ${body}" />
+      
+      <to id="_to7" uri="seda:ToMail?waitForTaskToComplete=Never" />
+    </split>
+    </route>
 
-<choice>
-						<when>
-							<simple>${body} == '' </simple>
-							
-							<log message="Success Enable" />
- <setBody>
-          <simple>{"message":"Successfully Updated"} </simple>
+    <route id="mailer" streamCache="true">  
+      <from id="fromMail" uri="seda:ToMail" />
+      <log id="log24" message="Mailing For ${header.Mailing} | Body : ${body}"/>
+      <choice>
+        <when>
+          <simple>${header.Mailing} == 'DOB' </simple>
+          <setHeader headerName="Subject">
+            <simple>{{DOBSubject}}</simple>
+          </setHeader>
+        </when>
+        <otherwise>
+          <setHeader headerName="Subject">
+            <simple>{{DOJSubject}}</simple>
+          </setHeader>
+        </otherwise>
+      </choice>
+      
+      <setHeader headerName="From" id="_setHeader2">
+          <simple>{{FromMail}}</simple>
+      </setHeader>
+      <setHeader headerName="To" id="_setHeader3">
+        <simple>{{ToMail}}</simple>
+      </setHeader> 
+      <setHeader headerName="bcc" id="_setHeader4">
+        <simple>{{MailIDAll}}</simple>
+      </setHeader>
+      <convertBodyTo type="java.lang.String"/>
+      <log id="_log25" message="Mail Body : ${body} | Headers : ${headers}"/>
+      <doTry>
+      <to id="_to8" uri="smtps://smtp.gmail.com:465?username=shardul.shekhar@fosteringlinux.com&amp;password=Shar@redhat&amp;mail.smtp.starttls.enable=true"/>
+      <doCatch>
+        <exception>java.lang.Exception</exception>
+        <log id="log34" message="Exception Occured" />
+        <setBody>
+          <simple>Exception Occured while Sending Mail : ${exception} </simple>
+        </setBody>
+        <setHeader headerName="Exchange.HTTP_QUERY" id="_setHeader11">
+          <simple>phone={{Mobile}}&amp;text={{text}}&amp;apikey={{apikey}}</simple>
+      </setHeader>
+        <to id="to11" uri="jetty:https://api.callmebot.com/whatsapp.php?" />
+        <log id="_log35" message="whatsapp alert sent :"/>
+      </doCatch>
+    </doTry>
+      <log id="_log26" message="mail sent :"/>
+      <choice>
+        <when>
+          <simple>${header.CamelRestletResponse} == 'HTTP/1.1 - OK (200) - The request has succeeded' </simple>
+          <setBody>
+            <simple>{"successfull":"mail sent"}</simple>
+          </setBody>
+        </when>
+        <otherwise>
+          <setBody>
+            <simple>{"response":"failure"}</simple>
+          </setBody>
+        </otherwise>
+      </choice>
+    </route>
+    
+    <route id="Search-route" streamCache="true">
+      <from id="from-search" uri="seda:dbSearch"/>
+      <log id="log29" message="Request Body Recievied from user ${body} :: ${headers}"/>
+      <bean ref="DBFields" method="getKey" />
+      <log id="log30" message=" Header key : ${header.key}"/>
+      <setBody>
+          <simple> select * from Employee where ${header.key} like '%${body[${header.key}]}%' </simple>
       </setBody>
-						</when>
-						<otherwise>
-							<log message="Failure Body" />
- <setBody>
-          <simple>${body} </simple>
-      </setBody>
-						</otherwise>
-					</choice>
+      <log id="log31" message="Request Body sent to DB ${body}" />
+      <doTry>
+				<to id="to10" uri="jdbc:dataSource"/>
+				<doCatch>
+          <exception>java.lang.Exception</exception>
+          <log id="log32" message="Exception Occured" />
+          <setBody>
+            <simple>Exception Occured while Setting Data : ${exception} </simple>
+          </setBody>
+				</doCatch>
+      </doTry>
+      <log id="log33" message="Respose Recieved from DB ${body}" />
+      
+      <setHeader headerName="CamelRestletResponse" id="_setHeader5">
+        <simple>${body}</simple>
+      </setHeader>
     </route>
 
   </camelContext>
