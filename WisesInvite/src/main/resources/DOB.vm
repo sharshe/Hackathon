@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+table {
+  font-family: arial, sans-serif;
+  border: 4px solid black;
+  width: 100%;
+  style="width:100%";
+}
+td, th {
+  border: 1px solid #dddddd;
+  text-align: left;
+  padding: 8px;
+}
+
+tr:nth-child(even) {
+  background-color: #dddddd;
+  border: 1px solid black;
+}
+footer {
+  padding: 10px;
+  text-align: left;
+  color: black;
+}
+</style>
+</head>
+
+<body>
+<p> Dear All, </p>
+<br/>
+<p> Celebrating birthday's : </p>
+<p/>
+  #foreach ($i in $body)
+  #set($count = $foreach.count)
+  #end
+
+  <table>
+  <tr>
+    <th>Employee ID</th>
+    <th>Employee Name</th>
+    <th>Employee Email</th> 
+    <th>Designation</th>
+    
+  </tr>  
+     
+    #foreach ($i in $body)
+ <tr>
+    <td>$i.EmpId</td>
+    <td>$i.EmpName</td>
+    <td>$i.Empmail</td>
+    <td>$i.EmpDesig</td>
+  
+  </tr>
+     #end
+    </table>  
+ 
+  
+</body>
+</html>
+ 

@@ -75,31 +75,31 @@
       </setBody>
       <log id="log8" message="Request Body sent to DB ${body}" />
       <doTry>
-				<to id="to4" uri="jdbc:dataSource"/>
-				<doCatch>
-					<exception>java.lang.Exception</exception>
-					<log message="Exception Occured : ${exception}" />
+        <to id="to4" uri="jdbc:dataSource"/>
+        <doCatch>
+          <exception>java.lang.Exception</exception>
+          <log message="Exception Occured : ${exception}" />
           <setBody>
             <simple>{"message":"${exception}"} </simple>
           </setBody>
-				</doCatch>
+        </doCatch>
       </doTry>
       <log id="log9" message="Respose Recieved from DB ${body}" />
       <choice>
         <when>
-					<simple>${body} == null </simple>
-					<log id="log10" message="Success Enable" />
+          <simple>${body} == null </simple>
+          <log id="log10" message="Success Enable" />
           <setBody>
             <simple>{"message":"Successfully Inserted"} </simple>
           </setBody>
-				</when>
-				<otherwise>
-					<log id="log11" message="Failure Body" />
+        </when>
+        <otherwise>
+          <log id="log11" message="Failure Body" />
           <setBody>
             <simple>${body} </simple>
           </setBody>
-				</otherwise>
-			</choice>
+        </otherwise>
+      </choice>
     </route>
 
     <route id="Update-route" streamCache="true">
@@ -112,31 +112,31 @@
       </setBody>
       <log id="log14" message="Request Body sent to DB ${body}" />
       <doTry>
-				<to id="to5" uri="jdbc:dataSource"/>
-				<doCatch>
+        <to id="to5" uri="jdbc:dataSource"/>
+        <doCatch>
           <exception>java.lang.Exception</exception>
           <log id="log15" message="Exception Occured : ${exception}" />
           <setBody>
             <simple>{"message":"${exception}"}</simple>
           </setBody>
-				</doCatch>
+        </doCatch>
       </doTry>
       <log id="log16" message="Respose Recieved from DB ${body}" />
       <choice>
         <when>
-					<simple>${body} == null </simple>
-					<log id="log17" message="Success Enable" />
+          <simple>${body} == null </simple>
+          <log id="log17" message="Success Enable" />
           <setBody>
             <simple>{"message":"Successfully Updated"} </simple>
           </setBody>
-				</when>
-				<otherwise>
-					<log id="log18" message="Failure Body" />
+        </when>
+        <otherwise>
+          <log id="log18" message="Failure Body" />
           <setBody>
             <simple>${body} </simple>
           </setBody>
-				</otherwise>
-			</choice>
+        </otherwise>
+      </choice>
       <setHeader headerName="CamelRestletResponse" id="_setHeader1">
         <simple>${body}</simple>
       </setHeader>
@@ -174,14 +174,14 @@
       
       <log id="log21" message="Request Body sent to DB ${body}" />
       <doTry>
-				<to id="to6" uri="jdbc:dataSource"/>
-				<doCatch>
+        <to id="to6" uri="jdbc:dataSource"/>
+        <doCatch>
           <exception>java.lang.Exception</exception>
           <log id="log22" message="Exception Occured" />
           <setBody>
             <simple>Exception Occured while Setting Data : ${exception} </simple>
           </setBody>
-				</doCatch>
+        </doCatch>
       </doTry>
       <log id="log23" message="Respose Recieved from DB ${body}" />
       
@@ -258,14 +258,14 @@
       </setBody>
       <log id="log31" message="Request Body sent to DB ${body}" />
       <doTry>
-				<to id="to10" uri="jdbc:dataSource"/>
-				<doCatch>
+        <to id="to10" uri="jdbc:dataSource"/>
+        <doCatch>
           <exception>java.lang.Exception</exception>
           <log id="log32" message="Exception Occured" />
           <setBody>
             <simple>Exception Occured while Setting Data : ${exception} </simple>
           </setBody>
-				</doCatch>
+        </doCatch>
       </doTry>
       <log id="log33" message="Respose Recieved from DB ${body}" />
       
