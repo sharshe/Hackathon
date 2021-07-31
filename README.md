@@ -1,6 +1,9 @@
 # Hackathon
 API's - 
 
+curl -XPOST -d '{"EmpName":"shardul"}' -H 'Content-Type:application/json' "http://0.0.0.0:9080/api/empdata/search"
+
+
 POST /api/empdata/entry
 
 http://10.15.15.229:8900/rest/WishesInvite/1.0.0/api/empdata/entry
